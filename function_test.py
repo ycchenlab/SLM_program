@@ -12,7 +12,7 @@ import imageio
 from datetime import datetime
 
 
-def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDifferences,targetphase):
+def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDifferences,targetphase, costRG):
  # Set device placement for TensorFlow operations
  
 
@@ -23,10 +23,14 @@ def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDiffer
     target_tf = tf.convert_to_tensor(target, dtype=tf.float32)
     initial_profile_tf = tf.convert_to_tensor(initial_profile, dtype=tf.complex64)
     targetphase_tf = tf.convert_to_tensor(targetphase, dtype=tf.float32)
+    costRG_tf = tf.convert_to_tensor(costRG, dtype = tf.float32)
     
 # initialize the optimization parameters
     DOE_tf = tf.math.real(DOE_tf)
     variables = tf.Variable(DOE_tf)
+    #variables = tf.math.multiply(tf.Variable(DOE_tf),costRG_tf)
+    
+        
     learning_rate=LR
     optimizer = tf.optimizers.Adam(learning_rate)
 
@@ -67,14 +71,18 @@ def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDiffer
     def conjugategrad (variables):
         d = 3
         DOEphase = tf.exp(complex_one * tf.cast(variables, tf.complex64))
-        iterf_tf = tf.signal.fft2d(initial_profile_tf *DOEphase) # training output electric field
-        intf_tf = tf.math.square(tf.abs(iterf_tf)) / tf.math.reduce_max(tf.square(tf.abs(iterf_tf))) # normalized training intenstiy
-        angf_tf = tf.math.angle(iterf_tf)
-        
+        #iterf_tf = tf.math.multiply(tf.signal.fft2d(initial_profile_tf *DOEphase),costRG_tf) # training output electric field
+        iterf_tf = tf.signal.fft2d(initial_profile_tf *DOEphase)
+        intf_tf = tf.math.multiply(tf.square(tf.abs(iterf_tf)) / tf.math.reduce_max(tf.square(tf.abs(iterf_tf))), costRG_tf) # normalized training intenstiy
+        angf_tf = tf.math.multiply(tf.math.angle(iterf_tf), costRG_tf)
+        #print(tf.reduce_min(angf_tf))
+        #print(tf.reduce_max(angf_tf))
+        #angf_tf = angf_tf -tf.reduce_min(angf_tf)
+        constant = tf.reduce_sum(tf.sqrt(tf.multiply(target_tf, target_tf)))
         #print(variables)
-        costfun = 10**d*(1-tf.reduce_sum(tf.sqrt(tf.math.multiply(intf_tf, target_tf))*tf.cos(targetphase_tf-angf_tf)))
+        costfun = (10**d)*((1-tf.reduce_sum(tf.sqrt(tf.multiply(intf_tf, target_tf)))/constant)**2)
         
-        return costfun
+        return costfun, angf_tf
     
     def costFnEfficient (variables):
         
@@ -83,10 +91,11 @@ def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDiffer
     
 
     def costFnSimple (variables):
-        costfuns = tf.reduce_sum(tf.pow(target_tf - tf.abs(tf.square(
-            tf.signal.fft2d(initial_profile_tf * tf.exp(complex_one * tf.cast(variables, tf.complex64)))))/ 
-            tf.reduce_max(tf.square(tf.abs(tf.signal.fft2d(initial_profile_tf * tf.exp(complex_one * 
-            tf.cast(variables, tf.complex64)))))), pp))
+        DOEphase = tf.exp(complex_one * tf.cast(variables, tf.complex64))
+        #iterf_tf = tf.math.multiply(tf.signal.fft2d(initial_profile_tf *DOEphase),costRG_tf) # training output electric field
+        iterf_tf = tf.signal.fft2d(initial_profile_tf *DOEphase)
+        intf_tf = tf.math.multiply(tf.square(tf.abs(iterf_tf)) / tf.math.reduce_max(tf.square(tf.abs(iterf_tf))), costRG_tf) # normalized training intenstiy
+        costfuns = tf.reduce_sum(tf.pow(tf.square(target_tf) - intf_tf, pp))
         #print(variables)
         return costfuns
 
@@ -132,7 +141,8 @@ def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDiffer
                     cost = costFnSimple(variables)   
                     
             elif costType==6:
-                cost = conjugategrad(variables)
+                cost, con_angle = conjugategrad(variables)
+                print(con_angle)
                         
             gradients = tape.gradient(cost, variables)
             gradients = tf.reshape(gradients,(N,N))
@@ -146,7 +156,7 @@ def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDiffer
         
     optimizer_string = str(optimizer)
     
-    plt.plot(range(1, num_iterations + 1), cost_values, )
+    plt.plot(range(1, num_iterations + 1), cost_values)
     plt.xlabel('Iteration')
     plt.ylabel('Cost')
     plt.title('Cost Function')

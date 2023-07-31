@@ -15,8 +15,7 @@ import imageio
 import time
 import os
 import shutil
-from cv2 import imread, IMREAD_GRAYSCALE
-
+import cv2
 
 # ===================================== Parameters config ===============================================
 
@@ -30,13 +29,22 @@ X, Y = np.meshgrid(x, y)
 
 
 # Super-Gaussian profile parameters
-m = 10  # Super-Gaussian exponent
+mx = 3  # Super-Gaussian exponent
+my = 1
 A = 1  # Super-Gaussian amplitude
 w0 = L/6  # Super-Gaussian width
 
 # Generate super-Gaussian profile -- it is intensity
-target = np.square(A * np.exp(-(np.abs(X)/w0)**(2*m)) * np.exp(-(np.abs(Y)/(w0/4))**(2*m)))
-targetphase = np.zeros([N,N])
+target = np.square(A * np.exp(-(np.abs(X)/w0)**(2*mx)) * np.exp(-(np.abs(Y)/(w0/4))**(2*my)))
+target /= np.max(target)  # Normalize matrix
+targetphase = np.ones([N,N])
+
+ret, binary = cv2.threshold(target, 0.4*A, 1*A, cv2.THRESH_BINARY)
+rg = binary/A/A # the range of costfunction selected
+
+target = target*rg  # Normalize matrix
+targetphase = targetphase*rg
+
 # Gaussian beam parameters
 w0 = L/6  # Gaussian beam waist radius
 
@@ -44,20 +52,20 @@ w0 = L/6  # Gaussian beam waist radius
 R = np.sqrt(X**2 + Y**2)  # Circular shape
 initial_profile = np.exp(-((R/w0)**2))
 
-target /= np.max(target)  # Normalize matrix
+
 
 # Defining DOE phase
+DOE = np.load('DOE_data.npy')
+#DOE = np.random.rand(N,N)*2*np.pi-np.pi
 
-DOE = np.random.rand(N,N)*2*np.pi
-
-s = 30
+s = 10
 
 # Create an empty list to store frames
 frames = []
 
 # costType: 1 = simple cost function(Ct2), 2 = smoothing neighbor pixels(Cs), 3 = alternating Ct4 / Cs, 4 = alternating Ct2 / Cs, 5 = Ct4 / Ct2
-costType = 1
-learning_rate=0.05
+costType = 6
+learning_rate=0.005
 
 # ===================================== Parameters config ===============================================
 
@@ -73,7 +81,7 @@ for t in range(s):
     iterf = fft2(initial_profile * DOEphase) # field fft
     intf = np.square(np.abs(iterf)) / np.max(np.square(np.abs(iterf))) # normalized training intenstiy
     angf = np.angle(iterf)
-    A = target * np.exp(1j * angf)
+    #A = target * np.exp(1j * angf)
 
     # Backward iteration
     '''
@@ -85,13 +93,13 @@ for t in range(s):
     E = np.sum(np.abs(error)) / (N * N)
     differences = target - intf
     squaredDifferences = differences**2
-    meanSquaredDifferences = np.mean(squaredDifferences)
+    meanSquaredDifferences = np.sum(squaredDifferences)/np.sum(rg)
     
     
     ############################ Optimization funciton
     
 
-    cost, DOE_tf, learning_rate, optimizer_string = costfunction(DOE, target, initial_profile, N,t,learning_rate, costType,squaredDifferences, targetphase)
+    cost, DOE_tf, learning_rate, optimizer_string = costfunction(DOE, target, initial_profile, N,t,learning_rate, costType,squaredDifferences, targetphase, rg)
     DOE = DOE_tf.numpy() 
 
     rmse = np.sqrt(meanSquaredDifferences)
