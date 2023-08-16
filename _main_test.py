@@ -58,13 +58,13 @@ initial_profile = np.exp(-((R/w0)**2))
 DOE = np.load('DOE_data.npy')
 #DOE = np.random.rand(N,N)*2*np.pi-np.pi
 
-s = 10
+s = 30
 
 # Create an empty list to store frames
 frames = []
 
 # costType: 1 = simple cost function(Ct2), 2 = smoothing neighbor pixels(Cs), 3 = alternating Ct4 / Cs, 4 = alternating Ct2 / Cs, 5 = Ct4 / Ct2
-costType = 6
+costType = 1
 learning_rate=0.005
 
 # ===================================== Parameters config ===============================================
