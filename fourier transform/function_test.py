@@ -12,7 +12,7 @@ import imageio
 from datetime import datetime
 
 
-def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDifferences,targetphase, costRG):
+def costfunction(DOE, target, initial_profile, Nx, Ny, t, LR, costType, squaredDifferences,targetphase, costRG):
  # Set device placement for TensorFlow operations
  
 
@@ -145,7 +145,7 @@ def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDiffer
                 print(con_angle)
                         
             gradients = tape.gradient(cost, variables)
-            gradients = tf.reshape(gradients,(N,N))
+            gradients = tf.reshape(gradients,(Nx,Ny))
             print(gradients)
             
     # Perform optimization

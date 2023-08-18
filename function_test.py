@@ -99,7 +99,7 @@ def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDiffer
         #print(variables)
         return costfuns
 
-    num_iterations = 30
+    num_iterations = 1000
     for i in range(num_iterations):
     
         # Compute the gradient using tf.GradientTape
@@ -146,12 +146,12 @@ def costfunction(DOE, target, initial_profile, N, t, LR, costType, squaredDiffer
                         
             gradients = tape.gradient(cost, variables)
             gradients = tf.reshape(gradients,(N,N))
-            print(gradients)
+            #print(gradients)
             
     # Perform optimization
         optimizer.apply_gradients([(gradients, variables)])
         cost_values.append(cost.numpy())
-        print (cost.numpy())
+        #print (cost.numpy())
         
         
     optimizer_string = str(optimizer)
@@ -174,7 +174,7 @@ def get_file_creation_time(file_path):
 
 def converter():
         # Folder path containing the images
-    folder_path = 'C:/Users/ycche/git repo/SLM_program/tempPNG'
+    folder_path = 'C:/Users/ycchen/git repo/SLM_program/tempPNG'
     
     # List to store image file names
     image_files = []

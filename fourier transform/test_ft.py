@@ -49,37 +49,30 @@ gy =  g[:, int(Ny/2)]
 
 f = 110 # focal length
 l = 895e-6 # lambda
-factor = f*l
-# factor = 0.1
 
-ftx_operate = np.exp(1j*2*np.pi/factor*np.transpose(np.array([ox]))*np.array([x]))
-fty_operate = np.exp(1j*2*np.pi/factor*np.transpose(np.array([oy]))*np.array([y]))
+def ft(init_x, init_y, omega_x, omega_y, function, f, l):
+    factor = f*l
+    ftx_operate = np.exp(1j*2*np.pi/factor*np.transpose(np.array([omega_x]))*np.array([init_x]))
+    fty_operate = np.exp(1j*2*np.pi/factor*np.transpose(np.array([omega_y]))*np.array([init_y]))
+    #---------------------------------------output profile
+    o = np.dot(ftx_operate, np.transpose(function))
+    o = np.dot(o, np.transpose(fty_operate))
+    return o
 
-#Ox = np.dot(ftx_operate, np.transpose([gx]))
-#Oy = np.dot(fty_operate, np.transpose([gy]))
-ft_operate = np.dot(ftx_operate, fty_operate)
-Oxy = np.dot(np.transpose(np.array([gx])), np.transpose(np.array([gy])))
-#---------------------------------------output profile
-o = ft_operate * Oxy
+o = ft(x, y, ox, oy, g, f, l)
 
 #------------------------------------plot
-m = np.max(np.abs(g))
-fig, ax = plt.subplots()
-t = plt.title('before ft')
-ax.imshow(np.abs(g), cmap = 'Blues')
-ax.contour(np.abs(g), cmap = 'Blues_r', levels = [0, m/5*1, m/5*2, m/5*3, m/5*4, m])
-
-fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-t = plt.title('before ft')
-ax.plot_surface(X,Y, np.abs(g), cmap = 'Blues')
-
-m = np.max(np.abs(o))
-fig, ax = plt.subplots()
-t = plt.title('after ft')
-ax.imshow(np.abs(o), cmap = 'Greens')
-ax.contour(np.abs(o), cmap = 'Greens_r', levels = [0, m/5*1, m/5*2, m/5*3, m/5*4, m])
-
-fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-t = plt.title('after ft')
-ax.plot_surface(oX,oY, np.abs(o), cmap = 'Greens')
-
+def plot(x, y, function, colors):
+    
+    m = np.max(np.abs(function))
+    fig, ax = plt.subplots()
+    t = plt.title('before ft')
+    ax.imshow(np.abs(function), cmap = colors)
+    ax.contour(np.abs(function), cmap = colors + '_r', levels = [0, m/5*1, m/5*2, m/5*3, m/5*4, m])
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    t = plt.title('before ft')
+    X, Y = np.meshgrid(x, y)
+    ax.plot_surface(X,Y, np.abs(function), cmap = colors)
+    return True
+plot(x, y, g, 'Blues')
+plot(ox, oy, o, 'Greens')

@@ -49,8 +49,8 @@ ax.plot_surface(X,Y, np.real(target), cmap = 'Blues')
 #plt.colorbar()
 # ----------------------------------------omega plane
 
-oNx = 100 # total = 1296
-oNy= 100 # total = 964
+oNx = 20 # total = 1296
+oNy= 20 # total = 964
 odx = 3.75e-3 # (mm)
 ody = 3.75e-3 # (mm)
 oLx = oNx * odx # (mm)
