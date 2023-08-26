@@ -174,7 +174,7 @@ def get_file_creation_time(file_path):
 
 def converter():
         # Folder path containing the images
-    folder_path = 'C:/Users/ycche/git repo/SLM_program/tempPNG'
+    folder_path = 'C:/Users/user/git repo/SLM_program/fourier transform/tempPNG/'
     
     # List to store image file names
     image_files = []
